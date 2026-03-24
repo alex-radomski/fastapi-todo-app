@@ -17,3 +17,11 @@ lint:
     mypy .
 
 test: format lint pytest
+
+# Spin up postgres for tests
+up:
+    cd backend &&docker compose up -d
+
+# Close postgres for tests
+down:
+    cd backend && docker compose down
