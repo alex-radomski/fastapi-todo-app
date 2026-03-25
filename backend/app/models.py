@@ -7,15 +7,20 @@ class Base(DeclarativeBase):
     pass
 
 
-class ToDo(Base):
+class TodoDB(Base):
     __tablename__ = "to_dos"
     id: Mapped[str] = mapped_column(primary_key=True)
     task_name: Mapped[str] = mapped_column()
     is_done: Mapped[bool] = mapped_column()
 
 
-# Pydantic models
-class ToDoSchema(BaseModel):
+# Pydantic models — represent API inputs and outputs
+class CreateTodo(BaseModel):
+    task_name: str
+    is_done: bool
+
+
+class Todo(BaseModel):
     id: str
     task_name: str
     is_done: bool
