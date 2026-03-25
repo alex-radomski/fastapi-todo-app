@@ -1,38 +1,21 @@
-import psycopg
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import NullPool
-from sqlalchemy.engine import URL
 from typing import Iterator
 
-from ..db_models import Base
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
+
+from ..main import app
+from ..models import Base
+from ..repository import Repository, get_db
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_database():
-    conn = psycopg.connect(
-        host="localhost",
-        port=5433,
-        user="todo",
-        password="todo",
-        dbname="postgres",
-        autocommit=True,
-    )
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT 1 FROM pg_database WHERE datname = 'todo_test'")
-    if not cursor.fetchone():
-        cursor.execute("CREATE DATABASE todo_test")
-
-    yield
-
-    cursor.execute("DROP DATABASE todo_test WITH (FORCE)")
-    conn.close()
-
-
+# Connects to the test database and recreates all tables before each test,
+# so every test starts with a clean, empty database.
 @pytest.fixture
-def database_engine(setup_test_database):
+def database_engine():
     url = URL.create(
         "postgresql+psycopg",
         username="todo",
@@ -50,6 +33,25 @@ def database_engine(setup_test_database):
     engine.dispose()
 
 
+# Wraps the session in our Repository class so tests can call methods like
+# save_todo() and load_todo() directly.
+@pytest.fixture
+def repository(database_session) -> Repository:
+    return Repository(database_session)
+
+
+# Provides an HTTP test client for making requests against the app (e.g. client.get("/")).
+# Swaps out the real database for the test one so requests hit test data, not production.
+@pytest.fixture
+def client(database_session) -> Iterator[TestClient]:
+    app.dependency_overrides[get_db] = lambda: database_session
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+
+# Opens a conversation with the database for the duration of a single test,
+# then closes it when the test finishes.
 @pytest.fixture
 def database_session(database_engine) -> Iterator[Session]:
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=database_engine)

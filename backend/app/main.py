@@ -1,22 +1,11 @@
-from fastapi import FastAPI, Depends
-from pydantic import BaseModel, ValidationError
-from .db import engine, get_db
-from .db_models import Base, ToDo
+from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
 
-
+from .repository import Repository, get_db
 
 app = FastAPI()
-Base.metadata.create_all(engine)
+
 
 @app.get("/")
-async def root(db: Session = Depends(get_db)):
-
-    new_todo = ToDo(id ="this is the id", task_name="Sample ToDo", is_done= False)
-
-    db.add(new_todo)
-    db.commit()
-
-
-
-    return {"message": "Hello World"}
+async def root(database: Session = Depends(get_db)):
+    return Repository(database).load_all_todos()

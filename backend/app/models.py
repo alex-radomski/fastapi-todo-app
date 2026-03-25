@@ -1,11 +1,26 @@
 from pydantic import BaseModel
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-class ToDo(BaseModel):
+
+# SQLAlchemy models — represent database tables
+class Base(DeclarativeBase):
+    pass
+
+
+class ToDo(Base):
+    __tablename__ = "to_dos"
+    id: Mapped[str] = mapped_column(primary_key=True)
+    task_name: Mapped[str] = mapped_column()
+    is_done: Mapped[bool] = mapped_column()
+
+
+# Pydantic models
+class ToDoSchema(BaseModel):
     id: str
-    task: str
+    task_name: str
     is_done: bool
 
 
-class User(BaseModel):
+class UserSchema(BaseModel):
     id: int
     user: str
