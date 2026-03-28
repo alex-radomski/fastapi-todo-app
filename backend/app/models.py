@@ -29,3 +29,9 @@ class Todo(BaseModel):
 class UserSchema(BaseModel):
     id: int
     user: str
+
+
+class UpdateTodo(BaseModel):
+    id: str
+    task_name: str | None = None
+    is_done: bool | None = None
